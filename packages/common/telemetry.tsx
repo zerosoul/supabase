@@ -51,20 +51,22 @@ export function handlePageTelemetry(
   ref?: string,
   telemetryDataOverride?: components['schemas']['TelemetryPageBodyV2']
 ) {
-  // Send to PostHog client-side
-  const pageData = getSharedTelemetryData(pathname)
-  posthogClient.capturePageView({
-    $current_url: pageData.page_url,
-    $pathname: pageData.pathname,
-    $host: new URL(pageData.page_url).hostname,
-    $groups: {
-      ...(slug ? { organization: slug } : {}),
-      ...(ref ? { project: ref } : {}),
-    },
-    page_title: pageData.page_title,
-    ...pageData.ph,
-    ...Object.fromEntries(Object.entries(featureFlags || {}).map(([k, v]) => [`$feature/${k}`, v])),
-  })
+  // Send to PostHog client-side (only in browser)
+  if (typeof window !== 'undefined') {
+    const pageData = getSharedTelemetryData(pathname)
+    posthogClient.capturePageView({
+      $current_url: pageData.page_url,
+      $pathname: pageData.pathname,
+      $host: new URL(pageData.page_url).hostname,
+      $groups: {
+        ...(slug ? { organization: slug } : {}),
+        ...(ref ? { project: ref } : {}),
+      },
+      page_title: pageData.page_title,
+      ...pageData.ph,
+      ...Object.fromEntries(Object.entries(featureFlags || {}).map(([k, v]) => [`$feature/${k}`, v])),
+    })
+  }
 
   // Send to backend
   // TODO: Remove this once migration to client-side page telemetry is complete
@@ -97,13 +99,15 @@ export function handlePageLeaveTelemetry(
   slug?: string,
   ref?: string
 ) {
-  // Send to PostHog client-side
-  const pageData = getSharedTelemetryData(pathname)
-  posthogClient.capturePageLeave({
-    $current_url: pageData.page_url,
-    $pathname: pageData.pathname,
-    page_title: pageData.page_title,
-  })
+  // Send to PostHog client-side (only in browser)
+  if (typeof window !== 'undefined') {
+    const pageData = getSharedTelemetryData(pathname)
+    posthogClient.capturePageLeave({
+      $current_url: pageData.page_url,
+      $pathname: pageData.pathname,
+      page_title: pageData.page_title,
+    })
+  }
 
   // Send to backend
   // TODO: Remove this once migration to client-side page telemetry is complete
